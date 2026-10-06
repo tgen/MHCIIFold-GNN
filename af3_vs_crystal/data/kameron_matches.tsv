@@ -1,0 +1,18 @@
+# Sent by Kameron (Altin lab), 2026-09-21, pasted into chat by Brandon — verbatim
+# transcription of his table. `paired_seq` is the second sequence he wrote beside a
+# row: the sequence from the OTHER list, i.e. the crystal and the epitope list
+# disagree for that row. Empty = the two agreed.
+# allele_label is HIS label. It is NOT always the allele the PDB entry reports --
+# see README "Their label vs the structure's allele" before using it as truth.
+epitope	allele_label	pdb	url	paired_seq
+ENPVVHFFKNIVTPR	HLA-DRB1*15:01	1YMM	https://www.rcsb.org/structure/1YMM	
+FARRPPLAELAALNLSGSRL	HLA-DRB1*01:01	6HBY	https://www.rcsb.org/structure/6HBY	
+GIAGFAGEQGPAGEP	HLA-DRA*01:01/DRB1*04:01	7NZF	https://www.rcsb.org/structure/7NZF	GIAGFKGEQGPKGEP
+GQVELGGGPGAESCQ	HLA-DQA1*03:01/DQB1*03:02	8VCX	https://www.rcsb.org/structure/8VCX	GQVELGGGPGAGSLQ
+GSLQPLALEGSLQKRGIV	HLA-DRB1*04:01	4Y19	https://www.rcsb.org/structure/4Y19	
+GSLQPLALEGSLQKRGIV	HLA-DRB1*04:01	4Y1A	https://www.rcsb.org/structure/4Y1A	
+KRIAKAVNEKSCNCL	HLA-DRB1*04:01	5NI9	https://www.rcsb.org/structure/5NI9	
+KSAFYILPSIISNEK	HLA-DRB1*01:01	8CMF	https://www.rcsb.org/structure/8CMF	
+LDAYNMMISAGFSLW	HLA-DRB1*01:01	8CMG	https://www.rcsb.org/structure/8CMG	
+LSYYKLGASQRVAGD	HLA-DRB1*01:01	8CME	https://www.rcsb.org/structure/8CME	
+WNRQLYPEWTEAQRLD	HLA-DRB1*04:01	4IS6	https://www.rcsb.org/structure/4IS6	

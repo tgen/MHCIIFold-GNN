@@ -1,0 +1,23 @@
+# Structures found by OUR corrected RCSB scan that are NOT on Kameron's list.
+# Provenance: seqmotif search of epitopeHLAPositive.csv against RCSB with a
+# class II entity filter in the query plus trimmed probes, then each hit
+# verified against the deposit's own peptide chain (identity >= 0.80 kept).
+# NOT yet reviewed by Brandon or Kameron. Check before use -- in particular
+# 9A0U is titled 'Docking model', i.e. a MODEL, not an experimental structure.
+entry	peptide	xtal_seq	relation	identity	allele	date	method	title
+1HQR	VHFFKNIVTPRTP	VHFFKNIVTPRTP	exact	1.0	DRB1_1501	2001-01-03	X-RAY DIFFRACTION	CRYSTAL STRUCTURE OF A SUPERANTIGEN BOUND TO THE HIGH-AFFINITY, ZINC-DEPENDENT SITE ON MHC CLASS II
+1JK8	LVEALYLVCGERGF	LVEALYLVCGERGG	ham1	0.929	DQA10301-DQB10302	2001-08-22	X-RAY DIFFRACTION	Crystal structure of a human insulin peptide-HLA-DQ8 complex
+1ZGL	VHFFKNIVTPRTP	VHFFKNIVTPRTPGG	substring	1.0	DRB1_1501	2005-10-18	X-RAY DIFFRACTION	Crystal structure of 3A6 TCR bound to MBP/HLA-DR2a
+2FSE	AGFKGEQGPKGEP	AGFKGEQGPKGEPG	substring	1.0	DRB1_0101; DRB1_0401	2006-09-19	X-RAY DIFFRACTION	Crystallographic structure of a rheumatoid arthritis MHC susceptibility allele, HLA-DR1 (DRB1*0101), complexed with the immunodominant determinant of human type II collagen
+5JLZ	TSKGLFRAAVPSGAS	TSKGLFRAAVPSGAS	exact	1.0	DRB1_0101	2016-12-07	X-RAY DIFFRACTION	Crystal structure of HLA-DRB1*04:01 in complex with modified alpha-enolase peptide 26-40 with citrulline at the position 32
+5LAX	TSKGLFRAAVPSGAS	TSKGLFRAAVPSGAS	exact	1.0	DRB1_0101	2016-12-07	X-RAY DIFFRACTION	Crystal structure of HLA_DRB1*04:01 in complex with alpha-enolase peptide 26-40
+5NIG	KRIAKAVNEKSCNCL	KRIAKAVNEKSCNCL	exact	1.0	DRB1_0101; DRB1_0401	2018-06-13	X-RAY DIFFRACTION	Crystal structure of HLA-DRB1*04:01 with modified alpha-enolase peptide 326-340 (arginine 327 to citrulline)
+6BIN	LQYMRADQAAGGLR	QYMRADQAAGGLR	substring	1.0	DRB1_0101	2018-01-17	X-RAY DIFFRACTION	HLA-DRB1 in complex with Type II collagen peptide
+6NIX	AGFKGEQGPKGEP	GIAGFKGEQGPKGEP	substring	1.0	DRB1_0101; DRB1_0401	2020-01-22	X-RAY DIFFRACTION	Crystal structure of Immune Receptor
+6NIX	EPGIAGFKGEQGPKGEPG	GIAGFKGEQGPKGEP	substring	1.0	DRB1_0101	2020-01-22	X-RAY DIFFRACTION	Crystal structure of Immune Receptor
+6NIX	GIAGFKGEQGPKGEP	GIAGFKGEQGPKGEP	exact	1.0	DRB1_0401	2020-01-22	X-RAY DIFFRACTION	Crystal structure of Immune Receptor
+7NZE	AGFKGEQGPKGEP	GIAGFKGEQGPKGEP	substring	1.0	DRB1_0101; DRB1_0401	2022-06-08	X-RAY DIFFRACTION	Crystal structure of HLA-DR4 in complex with a human collagen type II peptide
+7NZE	EPGIAGFKGEQGPKGEPG	GIAGFKGEQGPKGEP	substring	1.0	DRB1_0101	2022-06-08	X-RAY DIFFRACTION	Crystal structure of HLA-DR4 in complex with a human collagen type II peptide
+7NZE	GIAGFKGEQGPKGEP	GIAGFKGEQGPKGEP	exact	1.0	DRB1_0401	2022-06-08	X-RAY DIFFRACTION	Crystal structure of HLA-DR4 in complex with a human collagen type II peptide
+9A0U	KRIAKAVNEKSCNCL	KRIAKAVNEKSCNC	substring	1.0	DRB1_0101; DRB1_0401	2021-06-04		Docking model of HLA class I with HLA class II
+9BF9	LSYYKLGASQRVAGD	SYYKLGASQRVAG	substring	1.0	DRB1_0101; DRB1_0701; DRB1_1501	2024-12-25	X-RAY DIFFRACTION	Human LAG-3-HLA-DR1 complex

@@ -1,0 +1,44 @@
+# The comparison set: every PDB entry we have a reason to compare against.
+# Both inputs are Kameron's: epitopeHLAPositive.csv is the source data, and
+# kameron_matches.tsv is his own 11-entry match over it.
+# epitope        = the peptide this entry is matched on.
+# epitope_source = where that sequence came from. For 7NZF and 8VCX it is NOT in
+#   epitopeHLAPositive.csv: Kameron's table lists the CRYSTAL's sequence there and
+#   notes the CSV's differing sequence beside it. Those two rows therefore read as
+#   'exact' against the crystal while the CSV -- and the AF3 job, which was run on
+#   the CSV sequence -- carry a different peptide. Do not read one as the other.
+# entity_seq   = the DEPOSITED peptide sequence (the PDB FASTA) -- what was in
+#                the crystal, and therefore what a prediction should fold.
+# modelled_seq = the residues that actually have COORDINATES -- what an RMSD can
+#                be computed over. Disordered termini are absent, so the two
+#                differ by 1-7 residues; do not use one where the other is meant.
+# modified_res = non-standard residue present (citrulline), mapped to its parent
+#                amino acid for pairing. Sequence matches, chemistry does not.
+# source: kameron | scan | both. status: include | EXCLUDE (reason in note).
+# caveat      = 'dagger' marks a row whose prediction and crystal are NOT the same
+#   peptide. It is scored anyway, over the identical positions only, and every
+#   figure and table marks it with a dagger. Read `note` before quoting it.
+pdb	epitope	epitope_source	entity_seq	modelled_seq	vs_entity	vs_modelled	modified_res	allele_label	source	caveat	status	note
+1YMM	ENPVVHFFKNIVTPR	epitopeHLAPositive.csv	ENPVVHFFKNIVTPRGGSGGGGG	ENPVVHFFKNIVTP	epitope_shorter_by_8	epitope_longer_by_1		HLA-DRB1*15:01	both		include	
+4IS6	WNRQLYPEWTEAQRLD	epitopeHLAPositive.csv	WNRQLYPEWTEAQRLD	RQLYPEWTEAQRL	exact	epitope_longer_by_3		HLA-DRB1*04:01	both		include	
+4Y19	GAGSLQPLALEGSLQKRGIV	epitopeHLAPositive.csv	GSLQPLALEGSLQKRG	QPLALEGSLQKRG	epitope_longer_by_4	epitope_longer_by_7		HLA-DRB1*04:01	both		include	
+4Y1A	GAGSLQPLALEGSLQKRGIV	epitopeHLAPositive.csv	GSLQPLALEGSLQKRG	LQPLALEGSLQKRG	epitope_longer_by_4	epitope_longer_by_6		HLA-DRB1*04:01	both		include	
+5NI9	KRIAKAVNEKSCNCL	epitopeHLAPositive.csv	KRIAKAVNEKSCNCL	KRIAKAVNEKSCNC	exact	epitope_longer_by_1		HLA-DRB1*04:01	both		include	
+6HBY	FARRPPLAELAALNLSGSRL	epitopeHLAPositive.csv	ARRPPLAELAALNLSGSRL	ARRPPLAELAALNLSGSRL	epitope_longer_by_1	epitope_longer_by_1		HLA-DRB1*01:01	both		include	
+8CME	LSYYKLGASQRVAGD	epitopeHLAPositive.csv	LSYYKLGASQRVAGD	LSYYKLGASQRVAGD	exact	exact		HLA-DRB1*01:01	both		include	
+8CMF	KSAFYILPSIISNEK	epitopeHLAPositive.csv	KSAFYILPSIISNEK	KSAFYILPSIISNEK	exact	exact		HLA-DRB1*01:01	both		include	
+8CMG	LDAYNMMISAGFSLW	epitopeHLAPositive.csv	LDAYNMMISAGFSLW	LDAYNMMISAGFSLW	exact	exact		HLA-DRB1*01:01	both		include	
+7NZF	GIAGFAGEQGPAGEP	kameron_matches.tsv (NOT in the CSV)	AGFAGEQGPAGEP	AGFAGEQGPAGEP	epitope_longer_by_2	epitope_longer_by_2		HLA-DRA*01:01/DRB1*04:01	kameron	dagger	include	SCORED WITH A CAVEAT. The AF3 job folded wild-type GIAGFKGEQGPKGEP; this crystal is the K->A mutant GIAGFAGEQGPAGEP (2 substitutions, positions 6 and 12). No tether and no other complication -- an ordinary peptide in an ordinary groove. 7NZE/6NIX remain the uncaveated references for that prediction.
+8VCX	GQVELGGGPGAESCQ	kameron_matches.tsv (NOT in the CSV)	GQVELGGGPGAESCQ	GQVELGGGPGAESCQ	exact	exact		HLA-DQA1*03:01/DQB1*03:02	kameron	dagger	include	SCORED WITH A CAVEAT at Kameron's request. The AF3 job folded the natural insulin sequence GQVELGGGPGAGSLQ; this crystal contains the engineered analog GQVELGGGPGAESCQ (IEDB 2266686, 'PI 40-54 G9E L11C'), which differs at 2 of 15 positions AND is covalently disulfide-bonded to MHC alpha res 72 (2.03 A), so the peptide is held in the groove. Only the 13 identical positions are scored; the number mixes prediction error with the sequence and tethering differences.
+1HQR	VHFFKNIVTPRTP	epitopeHLAPositive.csv	VHFFKNIVTPRTP	VHFFKNIVTP	exact	epitope_longer_by_3		DRB1_1501	scan		include	
+1JK8	LVEALYLVCGERGF	epitopeHLAPositive.csv	LVEALYLVCGERGG	LVEALYLVCGERGG	MISMATCH	MISMATCH		DQA10301-DQB10302	scan		include	crystal peptide LVEALYLVCGERGG (ham1, id=0.929)
+1ZGL	VHFFKNIVTPRTP	epitopeHLAPositive.csv	VHFFKNIVTPRTPGG	VHFFKNIVTPRTPG	epitope_shorter_by_2	epitope_shorter_by_1		DRB1_1501	scan		include	crystal peptide VHFFKNIVTPRTPGG (substring, id=1.0)
+2FSE	GEPGIAGFKGEQGPKGEPGPA	epitopeHLAPositive.csv	AGFKGEQGPKGEPG	AGFKGEQGPKGEPG	epitope_longer_by_7	epitope_longer_by_7		DRB1_0101; DRB1_0401	scan		include	crystal peptide AGFKGEQGPKGEPG (substring, id=1.0)
+5JLZ	TSKGLFRAAVPSGAS	epitopeHLAPositive.csv	TSKGLFRAAVPSGAS	SKGLFRAAVPSGAS	exact	epitope_longer_by_1	citrulline@6	DRB1_0101	scan		include	
+5LAX	TSKGLFRAAVPSGAS	epitopeHLAPositive.csv	TSKGLFRAAVPSGAS	SKGLFRAAVPSGAS	exact	epitope_longer_by_1		DRB1_0101	scan		include	
+5NIG	KRIAKAVNEKSCNCL	epitopeHLAPositive.csv	KRIAKAVNEKSCNCL	KRIAKAVNEKSCNCL	exact	exact	citrulline@2	DRB1_0101; DRB1_0401	scan		include	
+6BIN	LQYMRADQAAGGLR	epitopeHLAPositive.csv	QYMRADQAAGGLR	QYMRADQAAGGLR	epitope_longer_by_1	epitope_longer_by_1	citrulline@4	DRB1_0101	scan		include	crystal peptide QYMRADQAAGGLR (substring, id=1.0)
+6NIX	GIAGFKGEQGPKGEP	epitopeHLAPositive.csv	GIAGFKGEQGPKGEP	AGFKGEQGPKGEP	exact	epitope_longer_by_2		DRB1_0101; DRB1_0401	scan		include	crystal peptide GIAGFKGEQGPKGEP (substring, id=1.0)
+7NZE	GIAGFKGEQGPKGEP	epitopeHLAPositive.csv	GIAGFKGEQGPKGEP	GIAGFKGEQGPKGEP	exact	exact		DRB1_0101; DRB1_0401	scan		include	crystal peptide GIAGFKGEQGPKGEP (substring, id=1.0)
+9BF9	LSYYKLGASQRVAGD	epitopeHLAPositive.csv	SYYKLGASQRVAG	SYYKLGASQRVAG	epitope_longer_by_2	epitope_longer_by_2		DRB1_0101; DRB1_0701; DRB1_1501	scan		include	crystal peptide SYYKLGASQRVAG (substring, id=1.0)
+9A0U	KRIAKAVNEKSCNCL	epitopeHLAPositive.csv						DRB1_0101; DRB1_0401	scan		EXCLUDE	not an experimental structure: Docking model of HLA class I with HLA class II
