@@ -1,0 +1,19 @@
+{
+  "_comment": "Where graph_creation_from_AF3_outputs.py writes its graph pickles and how it names them. The two *_base entries are placeholders: replace them with real output directories before running the script.",
+
+  "out_base": "<path/to/graph_output_directory>",
+  "th": 5,
+
+  "origins": {
+    "epitope":     { "out_root": "alphafold_graphsEpitopes", "tag": "_epitopes" },
+    "pepseq":      { "out_root": "alphafold_graphs",         "tag": "" },
+    "netmhciipan": { "out_root": "alphafold_graphs",         "tag": "_NetMHCIIPan" }
+  },
+
+  "_filename_note": "Mode A: the output path is {out_base}/{out_root}/{hla}/{peptide}{suffix}, where suffix is filename_suffix with {hla}, {tag} and {th} substituted.",
+  "filename_suffix": "_alpha_9mers_{hla}{tag}_AA_level_GNN_{th}_with_letters.pkl",
+
+  "_csv_note": "Mode B (--csv): the output path is {csv_out_base}/{hla column}/{9mer column}_{name column}{csv_filename_suffix}.",
+  "csv_out_base": "<path/to/csv_mode_output_directory>",
+  "csv_filename_suffix": "_AA_level_GNN_{th}_with_letters.pkl"
+}
