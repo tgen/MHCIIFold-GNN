@@ -1,21 +1,17 @@
 # `input_data/` — everything the scripts read
 
-| File | Read by |
-|---|---|
-| `full_test_and_validation_set.tar` | — (extract first, see below) |
-| `peptide_aware_model_train_weights.pth` | `test_mhciifold_gnn.py` (`all_aa`) |
-| `peptide_agnostic_model_train_weights.pth` | `test_mhciifold_gnn.py` (`only_HLA_aa`) |
-| `external_validation_and_test_set.csv` | `test_mhciifold_gnn.py` |
-| `known_epitopes_per_allele.csv` | `select_epochs_from_validation.py`, `evaluate_on_test_set.py` |
-| `pepseq_drb1_binding_data.csv` | `train_mhciifold_gnn.py` |
-| `netmhciipan_ba_peptides_full.csv` | `train_mhciifold_gnn.py` |
-| graph pickles (from the `.tar`) | `train_mhciifold_gnn.py`, `test_mhciifold_gnn.py` |
+Files marked **released** are all you need to reproduce the published test
+results; the rest are only used when retraining.
 
-**Extract the archive before running anything:**
-
-```bash
-tar -xf input_data/full_test_and_validation_set.tar -C input_data/
-```
+| File | Read by | |
+|---|---|---|
+| `alpha_9mers_<HLA>_epitopes_AA_level_GNN_5_with_letters.pkl` | `test_mhciifold_gnn.py` | released |
+| `peptide_aware_model_train_weights.pth` | `test_mhciifold_gnn.py` (`all_aa`) | released |
+| `peptide_agnostic_model_train_weights.pth` | `test_mhciifold_gnn.py` (`only_HLA_aa`) | released |
+| `external_validation_and_test_set.csv` | `test_mhciifold_gnn.py` | released |
+| `known_epitopes_per_allele.csv` | `select_epochs_from_validation.py`, `evaluate_on_test_set.py` | released |
+| `pepseq_drb1_binding_data.csv` | `train_mhciifold_gnn.py` | retraining |
+| `netmhciipan_ba_peptides_full.csv` | `train_mhciifold_gnn.py` | retraining |
 
 ---
 
@@ -32,6 +28,11 @@ so they are the final models the paper reports.
 The final MHCIIFold-GNN score is the geometric mean of the two models'
 rank-normalised scores.
 
+Despite the file names, these hold **whole pickled model objects**, not
+`state_dict`s, so `torch.load` needs `weights_only=False` and needs the `GNN`
+and `GCNGraphClassifier` classes importable from `__main__`.
+`test_mhciifold_gnn.py` satisfies both when run as a script.
+
 ---
 
 ## Graph pickles
@@ -39,11 +40,23 @@ rank-normalised scores.
 Built from AlphaFold3 predictions by `graph_creation_from_AF3_outputs.py` and
 merged per allele. The `5` in the names is the edge distance threshold in Å.
 
-| File | Used by |
-|---|---|
-| `alpha_9mers_<HLA>_epitopes_AA_level_GNN_5_with_letters.pkl` | test |
-| `alpha_9mers_<HLA>_new_data_AA_level_GNN_5_with_letters.pkl` | train (PepSeq DRB1 alleles) |
-| `alpha_9mers_<HLA>_NetMHCIIPan_AA_level_GNN_5_with_letters.pkl` (plus an optional `..._2.pkl`) | train (NetMHCIIpan alleles) |
+One pickle per allele, named
+
+```
+alpha_9mers_<HLA>_epitopes_AA_level_GNN_5_with_letters.pkl
+```
+
+`test_mhciifold_gnn.py` scores whichever of these it finds in this folder, so a
+partial set of alleles is fine. `<HLA>` may carry the DRB1_ prefix
+(`alpha_9mers_DRB1_0818_...`) or be the bare number (`alpha_9mers_0405_...`);
+either way the parquet is written without the prefix, which is how the
+evaluation scripts look it up.
+
+**Training graphs are not part of the release.** Retraining additionally needs
+`alpha_9mers_<HLA>_new_data_AA_level_GNN_5_with_letters.pkl` (PepSeq DRB1
+alleles) and `alpha_9mers_<HLA>_NetMHCIIPan_AA_level_GNN_5_with_letters.pkl`
+(NetMHCIIpan alleles, plus an optional `..._2.pkl` second part), placed in this
+folder.
 
 Each pickle is a dictionary `{9mer sequence: torch_geometric.data.Data}`. Every
 `Data` object is one predicted peptide–MHC complex, trimmed to the binding
@@ -52,7 +65,7 @@ peptide):
 
 | Field | Shape | Contents |
 |---|---|---|
-| `x` | (n_residues, 7) | One row per residue, at its alpha carbon: `x, y, z, pLDDT (residue mean), molecule type (0 = HLA alpha, 1 = HLA beta, 2 = peptide), amino-acid code (1–20 standard, 21 = X, 22 = B), residue number within its chain`. The last 9 rows are the peptide. |
+| `x` | (n_residues, 6) | One row per residue, at its alpha carbon: `x`, `y`, `z`, pLDDT (mean over the residue's atoms), molecule type (0 = HLA alpha, 1 = HLA beta, 2 = peptide), amino-acid code (1–20 standard, 21 = X, 22 = B). The last 9 rows are the peptide. Graphs straight out of `graph_creation_from_AF3_outputs.py` carry a 7th column, the residue number within its chain, which the scripts drop. |
 | `edge_index` | (2, n_edges) | Residue pairs with any two atoms within 5 Å, stored in both directions. |
 | `edge_features` | (n_edges,) | AlphaFold3 contact probability of the residue pair. |
 | `edge_lengths` | (n_edges,) | Distance between the two residues' alpha carbons, in Å. Can exceed 5 Å, because edges are decided on atom-to-atom distance. |

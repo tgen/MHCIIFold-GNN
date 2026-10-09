@@ -14,7 +14,8 @@ TWO WAYS TO SUPPLY THE MODEL
 
    These are the models the paper reports: the epoch for each was already
    chosen on the validation set, so no epoch sweep is needed or possible here.
-   Output: <HLA>_epitope_test_released_<aa_set>.parquet in output_data/.
+   Output: one <HLA>_epitope_test_released_<aa_set>.parquet per allele, in
+   output_data/.
 
 2. `--all-epochs`, after retraining with train_mhciifold_gnn.py: scores every
    10th-epoch checkpoint and writes one parquet per (allele, epoch), which is
@@ -39,16 +40,18 @@ the score is LOW for binders.
 
 TWO INPUT MODES
 ---------------
-Mode A (default) -- one allele from the validation or test set:
+Mode A (default) -- every allele with a graph pickle in input_data/:
 
-    python test_mhciifold_gnn.py <HLA> <aa_set> [batch_size] \
+    python test_mhciifold_gnn.py <aa_set> [batch_size] \
                                  [--checkpoint FILE | --all-epochs]
                                  [--n-hlas N] [--seed S]
 
-    Peptides come from external_validation_and_test_set.csv for that allele;
-    the 9mer graphs are read from full_test_and_validation_set.tar in
-    input_data/ (or from an extracted .pkl there, if one exists). <HLA> may be
-    given with or without the DRB1_ prefix.
+    Each `alpha_9mers_<HLA>_epitopes_AA_level_GNN_5_with_letters.pkl` found in
+    input_data/ is scored and written out, so a partial set of alleles is fine
+    -- whatever is there gets done. The peptides of each allele come from
+    external_validation_and_test_set.csv. <HLA> is taken from the file name,
+    with or without the DRB1_ prefix; the parquet is always written without it,
+    which is how the evaluation scripts look it up.
 
 Mode B -- a directory tree of individually built 9mer graphs:
 
@@ -68,6 +71,7 @@ Mode B -- a directory tree of individually built 9mer graphs:
 ARGUMENTS SELECTING THE CHECKPOINTS
 -----------------------------------
     <aa_set>         'all_aa' or 'only_HLA_aa', must match the model
+    [batch_size]     inference memory knob only; never changes the scores
     --checkpoint F   score this checkpoint file instead of the released weights
     --all-epochs     score every 10th-epoch checkpoint of a retrained model
     --n-hlas N       retrained allele-panel size (--all-epochs only)
@@ -90,7 +94,6 @@ os.environ.setdefault('PYTORCH_CUDA_ALLOC_CONF', 'expandable_segments:True')
 import pickle
 import random
 import sys
-import tarfile
 from collections import defaultdict
 
 import numpy as np
@@ -194,7 +197,7 @@ if RERUN_MODE:
                 f"[--root DIR] [--hla NAME] [--bs N] [--epochs 70,300] [--one-batch]")
         _i += 2
 else:
-    AA_SET = sys.argv[2] if len(sys.argv) > 2 else 'all_aa'
+    AA_SET = sys.argv[1] if len(sys.argv) > 1 else 'all_aa'
 
 if AA_SET not in ('all_aa', 'only_HLA_aa'):
     raise ValueError(f"Unknown aa_set '{AA_SET}'. Choose 'all_aa' or 'only_HLA_aa'.")
@@ -357,48 +360,21 @@ def test(loader, test_df, peptide_names_t):
     return all_preds, all_labels, fff
 
 
-# The released graph pickles ship inside this archive; an extracted copy in
-# input_data/ is used in preference to it when present.
-GRAPH_TAR = os.path.join(INPUT_DIR, 'full_test_and_validation_set.tar')
+# Graph pickles live loose in input_data/, one per allele. Whichever are
+# present get scored, so a partial set is fine.
+PKL_PREFIX = 'alpha_9mers_'
+PKL_SUFFIX = f'_epitopes_AA_level_GNN_{GRAPH_TH}_with_letters.pkl'
 
 
-def hla_spellings(hla):
-    """The spellings this allele's graph pickle may be named with.
-
-    DRB1 alleles appear both as the bare number ('0405') and with the prefix
-    ('DRB1_0818'), so both are tried.
-    """
-    names = [hla]
-    if hla.startswith('DRB1_'):
-        names.append(hla[5:])
-    elif len(hla) == 4 and hla.isdigit():
-        names.append(f'DRB1_{hla}')
-    return names
-
-
-def load_graph_pickle(hla, kind):
-    """The merged graph pickle of one allele, from input_data/ or the archive."""
-    names = [f'alpha_9mers_{h}_{kind}_AA_level_GNN_{GRAPH_TH}_with_letters.pkl'
-             for h in hla_spellings(hla)]
-
-    for name in names:
-        path = os.path.join(INPUT_DIR, name)
-        if os.path.exists(path):
-            with open(path, 'rb') as f:
-                return pickle.load(f)
-
-    if os.path.exists(GRAPH_TAR):
-        with tarfile.open(GRAPH_TAR, 'r') as tar:
-            members = {os.path.basename(m.name): m for m in tar.getmembers() if m.isfile()}
-            for name in names:
-                if name in members:
-                    print(f'reading {name} from {os.path.basename(GRAPH_TAR)}', flush=True)
-                    with tar.extractfile(members[name]) as f:
-                        return pickle.load(f)
-
-    raise FileNotFoundError(
-        f'no graph pickle for {hla!r}: looked for {names} in {INPUT_DIR} '
-        f'and in {os.path.basename(GRAPH_TAR)}')
+def discover_alleles():
+    """Every allele with a graph pickle in input_data/, as (HLA, path) pairs."""
+    found = []
+    for name in sorted(os.listdir(INPUT_DIR)):
+        if name.startswith(PKL_PREFIX) and name.endswith(PKL_SUFFIX):
+            hla = name[len(PKL_PREFIX):-len(PKL_SUFFIX)]
+            if hla:
+                found.append((hla, os.path.join(INPUT_DIR, name)))
+    return found
 
 
 def windows_for(long_string, short_string_data):
@@ -491,34 +467,30 @@ def build_graphs(new_dict):
     return graphs, peptide_names
 
 
-if not RERUN_MODE:
-    HLA = sys.argv[1]
-    if len(HLA) == 3:
-        HLA = '0' + HLA
+def prepare_allele(hla, path, val_data):
+    """Load one allele's 9mer graphs and assemble its peptide graphs.
 
-    sss = load_graph_pickle(HLA, 'epitopes')
+    Returns (graphs, peptide_names, meta_df). The peptides come from
+    external_validation_and_test_set.csv; a peptide is dropped when any of its
+    sliding 9mer windows has no predicted structure.
+    """
+    with open(path, 'rb') as f:
+        sss = pickle.load(f)
 
-    # The evaluation scripts strip the DRB1_ prefix when they look for these
-    # parquets, so the allele is written out the same way however it was given.
-    HLA_KEY = HLA[5:] if HLA.startswith('DRB1_') else HLA
-
-    print('HLA is: ', HLA)
-    val_data = pd.read_csv(os.path.join(INPUT_DIR, 'external_validation_and_test_set.csv'), index_col=0)
-    if len(HLA) == 4:
-        test_df = val_data[val_data.HLA == f'DRB1_{HLA}']
-    else:
-        test_df = val_data[val_data.HLA == HLA]
+    # The CSV always names alleles in full, the file names not always.
+    hla_name = f'DRB1_{hla}' if len(hla) == 4 else hla
+    meta_df = val_data[val_data.HLA == hla_name]
 
     short_string_data = {key.upper(): value for key, value in sss.items()}
 
     new_dict = {}
-    for long_string in test_df['AA']:
+    for long_string in meta_df['AA']:
         data_objects_list = windows_for(long_string, short_string_data)
         if data_objects_list is not None:
             new_dict[long_string] = data_objects_list
 
-    graphs_test, peptide_names_test = build_graphs(new_dict)
-    print(f'Number of graphs created: {len(graphs_test)}')
+    graphs, peptide_names = build_graphs(new_dict)
+    return graphs, peptide_names, meta_df
 
 
 # =====================================================================================
@@ -530,7 +502,7 @@ if not RERUN_MODE:
 if RERUN_MODE:
     bs = RERUN_BS
 else:
-    bs = int(sys.argv[3]) if len(sys.argv) > 3 else 64
+    bs = int(sys.argv[2]) if len(sys.argv) > 2 else 64
 MIN_BS = 1
 
 
@@ -553,16 +525,11 @@ def free_gpu():
         torch.cuda.empty_cache()
 
 
-def run_test_with_backoff(start_bs, graphs_list=None, meta_df=None, names=None):
+def run_test_with_backoff(start_bs, graphs_list, meta_df, names):
     """Run test(), halving the batch size on CUDA OOM until it fits.
 
-    Returns (preds, labels, df, batch_size_used). The three optional arguments
-    default to Mode A's module-level values.
+    Returns (preds, labels, df, batch_size_used).
     """
-    graphs_list = graphs_test        if graphs_list is None else graphs_list
-    meta_df     = test_df            if meta_df     is None else meta_df
-    names       = peptide_names_test if names       is None else names
-
     b = start_bs
     while True:
         loader = DataLoader(graphs_list, batch_size=b, shuffle=False)
@@ -575,7 +542,7 @@ def run_test_with_backoff(start_bs, graphs_list=None, meta_df=None, names=None):
             del loader
             free_gpu()
             b = max(MIN_BS, b // 2)
-            print(f'CUDA OOM -- retrying this epoch with batch_size={b}', flush=True)
+            print(f'CUDA OOM -- retrying with batch_size={b}', flush=True)
 
 
 def check_widths(graphs_list, tag=''):
@@ -589,10 +556,6 @@ def check_widths(graphs_list, tag=''):
     assert built_ed == EDGE_DIM, (
         f'test-set edge features are {built_ed} wide, expected {EDGE_DIM}')
     return built_in
-
-
-if not RERUN_MODE:
-    built_in_channels = check_widths(graphs_test)
 
 
 # Directory the matching training run wrote to (CHECKPOINT_DIR in
@@ -670,7 +633,18 @@ def check_trained_width(model_obj, built_in, epoch):
 
 
 if not RERUN_MODE:
-    # ======================= Mode A: one HLA ==================================
+    # ============ Mode A: every allele with a pickle in input_data/ ===========
+    alleles = discover_alleles()
+    if not alleles:
+        raise FileNotFoundError(
+            f'no graph pickles in {INPUT_DIR}; expected files named '
+            f'{PKL_PREFIX}<HLA>{PKL_SUFFIX}')
+    print(f'{len(alleles)} graph pickles found: '
+          f'{", ".join(h for h, _ in alleles)}', flush=True)
+
+    val_data = pd.read_csv(os.path.join(INPUT_DIR, 'external_validation_and_test_set.csv'),
+                           index_col=0)
+
     for i, ckpt in CHECKPOINTS:
         if not os.path.exists(ckpt):
             print(f'checkpoint missing, skipping: {ckpt}')
@@ -679,23 +653,44 @@ if not RERUN_MODE:
         model = load_full_model(ckpt)
         model = model.to(device)
         model.eval()
+        print(f'\nscoring {len(alleles)} alleles with {os.path.basename(ckpt)}', flush=True)
 
-        check_trained_width(model, built_in_channels, i)
+        n_written = 0
+        for hla, path in alleles:
+            # The evaluation scripts strip the DRB1_ prefix when they look for
+            # these parquets, so the allele is written out the same way however
+            # the pickle was named.
+            hla_key = hla[5:] if hla.startswith('DRB1_') else hla
 
-        test_preds, test_labels, fffq, used_bs = run_test_with_backoff(bs)
-        if used_bs != bs:
-            # Keep the smaller size for the remaining epochs.
-            print(f'epoch {i}: batch size settled at {used_bs}', flush=True)
-            bs = used_bs
+            graphs, names, meta_df = prepare_allele(hla, path, val_data)
+            if not graphs:
+                print(f'  {hla}: no peptide has a complete window set, skipping', flush=True)
+                continue
 
-        if i is None:
-            out_parquet = os.path.join(OUTPUT_DIR, f'{HLA_KEY}_epitope_test_released_{AA_SET}.parquet')
-        else:
-            out_parquet = os.path.join(
-                TRAIN_DIR, f'{HLA_KEY}_epitope_test_epoch{i}_regular22_baseline_{AA_SET}.parquet')
-        os.makedirs(os.path.dirname(out_parquet), exist_ok=True)
-        fffq.to_parquet(out_parquet)
-        print(f'wrote {out_parquet}', flush=True)
+            built_in_channels = check_widths(graphs, tag=f'  [{hla}] ')
+            check_trained_width(model, built_in_channels, i)
+
+            _, _, fffq, used_bs = run_test_with_backoff(bs, graphs, meta_df, names)
+            if used_bs != bs:
+                # Keep the smaller size for the remaining alleles.
+                print(f'  {hla}: batch size settled at {used_bs}', flush=True)
+                bs = used_bs
+
+            if i is None:
+                out_parquet = os.path.join(
+                    OUTPUT_DIR, f'{hla_key}_epitope_test_released_{AA_SET}.parquet')
+            else:
+                out_parquet = os.path.join(
+                    TRAIN_DIR, f'{hla_key}_epitope_test_epoch{i}_regular22_baseline_{AA_SET}.parquet')
+            os.makedirs(os.path.dirname(out_parquet), exist_ok=True)
+            fffq.to_parquet(out_parquet)
+            n_written += 1
+            print(f'  {hla}: {len(graphs)} peptides -> {os.path.basename(out_parquet)}', flush=True)
+
+            del graphs
+            free_gpu()
+
+        print(f'{n_written}/{len(alleles)} alleles written', flush=True)
 
         # Release this checkpoint before loading the next one.
         del model

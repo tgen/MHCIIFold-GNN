@@ -115,23 +115,3 @@ The same measure is computed for NetMHCIIpan, FCM, MHCIIFold-GNN and the
 MHCIIFold-GNN + NetMHCIIpan combination, so every number is reported next to
 the baselines it is judged against.
 
-## Requirements
-
-PyTorch, pandas, NumPy, SciPy. Training and scoring expect a CUDA device; the
-two evaluation scripts are CPU-only.
-
-## Notes for reviewers
-
-- **Checkpoints are whole pickled models**, not `state_dict`s, so loading needs
-  the class importable and `weights_only=False` on torch ≥ 2.6. The code
-  handles this; see `saved_models/README.md`.
-- **All four scripts resolve their own paths.** `input_data/` and
-  `output_data/` are located relative to the script file, so every script runs
-  from any working directory, with no configuration and no absolute paths left
-  anywhere in the code.
-- **Retraining writes into `output_data/`.** `netmhciipan_code.py` creates
-  `output_data/<run_name>/` and puts its checkpoints there;
-  `netmhciipan_test.py` writes the matching prediction CSVs beside them, which
-  is exactly where `select_epoch_from_validation.py` then looks.
-- **The per-epoch checkpoints and prediction CSVs are not shipped** — tens of
-  files per run across 15 runs. Only the selected epoch of each model is here.
