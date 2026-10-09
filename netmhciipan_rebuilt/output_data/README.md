@@ -15,9 +15,9 @@ scores they are judged against.
 | `Peptide` | Peptide sequence. |
 | `Original` | The epitope group the peptide belongs to: the true epitope plus the decoys tiled across it. Performance is measured as the rank of the true epitope within its own group. |
 | `score` | 1 = true epitope, 0 = decoy. |
-| `GeoMean_letter` | MHCIIFold-GNN score (amino-acid identity model). |
-| `GeoMean_conf` | MHCIIFold-GNN score (confidence model). |
-| `Geomean_FCM` | FCM comparison-model score. |
+| `GeoMean_letter` | MHCIIFold-GNN peptide agnostic score. |
+| `GeoMean_conf` | MHCIIFold-GNN peptide aware score. |
+| `Geomean_FCM` | FCM score. |
 | `Rank` | NetMHCIIpan percentile rank (lower = stronger binder). |
 
 The two panels are disjoint: the validation alleles choose the epochs, the test
